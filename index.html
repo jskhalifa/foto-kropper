@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Cropper</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" integrity="sha512-UtLOu9C7NuThQhuXXrGwx9Jb/z9zPQJctuAgNUBK3Z6kkSYT9wJ+2+dh6klS+TDBCV9kNPBbAxbVD+vCcfGPaA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Compiled and minified JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <style>
+        /* Styles for the image container and preview */
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .img-container {
+            width: 100%;
+            max-height: 400px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        img {
+            max-width: 100%;
+        }
+
+        .preview {
+            overflow: hidden;
+            width: 300px;
+            height: 200px;
+            margin-top: 20px;
+            border: 1px solid #ccc;
+        }
+
+        .mt {
+            margin-top: 20px;
+        }
+
+        #preview-container {
+            display: none;
+        }
+
+        /* Footer styles */
+        footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: #2c3e50; /* Materialize dark color */
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+        }
+
+        footer p {
+            margin: 0;
+            font-size: 14px;
+        }
+
+        footer .social-icons a {
+            color: white;
+            margin: 0 10px;
+            font-size: 18px;
+            transition: color 0.3s ease;
+        }
+
+        footer .social-icons a:hover {
+            color: #90caf9; /* Light Blue accent for hover effect */
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        main {
+            flex: 1;
+            padding-bottom: 60px; /* Prevent content from overlapping the footer */
+        }
+
+    </style>
+</head>
+
+<body>
+    <!-- Navigation bar -->
+    <nav>
+        <div class="nav-wrapper blue">
+        <a href="#" class="brand-logo center">Image Cropper</a>
+        </div>
+    </nav>
+    <main>
+    <div class="container">
+        <!-- File input with Material Design styling -->
+        <div class="file-field input-field">
+        <div class="btn blue">
+            <span>Upload Image</span>
+            <input type="file" id="inputImage" accept="image/*">
+        </div>
+        <div class="file-path-wrapper">
+            <input class="file-path validate" type="text" placeholder="Choose an image to upload">
+        </div>
+        </div>
+
+        <!-- Container for the image to crop -->
+        <div class="img-container">
+            <img id="image" src="#" alt="Upload an image to crop" class="responsive-img" style="display: none;">
+        </div>
+
+        <!-- Buttons with Material Design styling -->
+        <div class="row mt">
+            <div class="col s12">
+                <a id="toggleAspectRatioButton" class="waves-effect waves-light btn blue">Half-frame</a>
+                <a id="cropButton" class="waves-effect waves-light btn green">
+                <i class="material-icons left">crop</i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Container for the cropped image preview -->
+        <div class="card" id="preview-container">
+            <div class="card-content">
+                <span class="card-title">Cropped Image Preview</span>
+                <div class="preview" id="preview"></div>
+                <a id="downloadButton" class="waves-effect waves-light btn red" style="display: none;" download>Download</a>
+            </div>
+        </div>
+
+    </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>© 2024 nhannvu.35mm</p>
+        <div class="social-icons">
+            <a href="https://www.facebook.com/nhannvu19" target="_blank"><i class="fab fa-facebook"></i></a>
+            <a href="https://www.instagram.com/nhannvu.35mm" target="_blank"><i class="fab fa-instagram"></i></a>
+        </div>
+    </footer>
+    <!-- Include Cropper.js JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js" integrity="sha512-JyCZjCOZoyeQZSd5+YEAcFgz2fowJ1F1hyJOXgtKu4llIa0KneLcidn5bwfutiehUTiOuK87A986BZJMko0eWQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- Include piexifjs for EXIF editing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/piexifjs/1.0.6/piexif.min.js" integrity="sha512-P3i9T4FdeWbyUw4XWxS+M1LbsQDDGJK23vVGvvZlFiQEkqL0XS+owtbxNbs4nof/aAPUM8/GReYECf/EHUhAOA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- Include ExifReader for reading EXIF data -->
+    <script src="https://cdn.jsdelivr.net/npm/exifreader@4.23.3/dist/exif-reader.min.js"></script>
+
+    <script>
+        function getEditedFilename(filename) {
+            const dotIndex = filename.lastIndexOf('.');
+
+            if (dotIndex > 0) {
+                const baseName = filename.substring(0, dotIndex);
+                const extension = filename.substring(dotIndex);
+                return `${baseName}-cropped${extension}`;
+            } else {
+                return `${filename}-cropped`;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const image = document.getElementById('image');
+            const inputImage = document.getElementById('inputImage');
+            const cropButton = document.getElementById('cropButton');
+            const toggleAspectRatioButton = document.getElementById('toggleAspectRatioButton');
+            const downloadButton = document.getElementById('downloadButton');
+            const preview = document.getElementById('preview');
+            const previewContainer = document.getElementById('preview-container');
+
+            let cropper;
+            let filename;
+            let originalExif;
+            let currentAspectRatio = 3 / 2; // Default aspect ratio
+
+            let newWidth = 0;
+            let newHeight = 0;
+
+            // Function to handle image upload and initialize Cropper.js
+            inputImage.addEventListener('change', (event) => {
+                const files = event.target.files;
+                const done = (url) => {
+                    inputImage.value = '';
+                    image.src = url;
+                    image.style.display = "block";
+                    if (cropper) {
+                        cropper.destroy();
+                    }
+                    cropper = new Cropper(image, {
+                        aspectRatio: currentAspectRatio,
+                        viewMode: 1,
+                        autoCropArea: 1,
+                        crop(event) {
+                            console.log(event.detail.x);
+                            console.log(event.detail.y);
+                            console.log(event.detail.width);
+                            console.log(event.detail.height);
+                            console.log(event.detail.rotate);
+                            console.log(event.detail.scaleX);
+                            console.log(event.detail.scaleY);
+
+                            newWidth = event.detail.width;
+                            newHeight = event.detail.height;
+                        },
+                    });
+                };
+                if (files && files.length > 0) {
+                    const file = files[0];
+                    filename = getEditedFilename(file.name);
+                    console.log(filename);
+
+                    // Create a new FileReader instance for reading as data URL
+                    const dataUrlReader = new FileReader();
+                    dataUrlReader.onload = (e) => {
+                        const dataUrl = e.target.result;
+                        done(dataUrl); // Call done function with data URL
+                    };
+                    dataUrlReader.readAsDataURL(file);
+
+                    // Create a new FileReader instance for reading as array buffer
+                    const arrayBufferReader = new FileReader();
+                    arrayBufferReader.onload = (e) => {
+                        const arrayBuffer = e.target.result;
+                        try {
+                        originalExif = ExifReader.load(arrayBuffer);
+                        console.log('EXIF Data:', originalExif);
+                        } catch (error) {
+                        console.error('Error reading EXIF data:', error);
+                        }
+                    };
+                    arrayBufferReader.readAsArrayBuffer(file);
+                }
+            });
+
+            toggleAspectRatioButton.addEventListener('click', () => {
+                if (cropper) {
+                    // Toggle aspect ratio between 3:2 and 2:3
+                    currentAspectRatio = currentAspectRatio === 3 / 2 ? 100 / 140 : 3 / 2;
+                    cropper.setAspectRatio(currentAspectRatio);
+
+                    if (currentAspectRatio == 3 / 2) {
+                        preview.style.width = "300px";
+                        preview.style.height = "200px";
+                        toggleAspectRatioButton.innerText = "Half-frame";
+                    } else {
+                        preview.style.width = "200px";
+                        preview.style.height = "280px";
+                        toggleAspectRatioButton.innerText = "Full-frame";
+                    }
+                }
+            });
+
+            // Function to handle image cropping
+            cropButton.addEventListener('click', () => {
+                if (cropper) {
+                    const canvas = cropper.getCroppedCanvas();
+                    const croppedImageDataUrl = canvas.toDataURL('image/jpeg');
+
+                    // Modify EXIF data to reflect new dimensions
+                    const newExif = JSON.parse(JSON.stringify(originalExif)); // Clone original EXIF data
+                    newExif['ImageWidth'] = canvas.width;
+                    newExif['ImageHeight'] = canvas.height;
+
+                    // Convert the DataURL to a binary string
+                    const base64Data = croppedImageDataUrl.split(',')[1];
+                    const binaryData = atob(base64Data);
+                    const binaryDataLength = binaryData.length;
+                    const binaryArray = new Uint8Array(binaryDataLength);
+
+                    for (let i = 0; i < binaryDataLength; i++) {
+                        binaryArray[i] = binaryData.charCodeAt(i);
+                    }
+
+                    // Insert the modified EXIF data back into the image
+                    const newDataUrl = piexif.insert(piexif.dump(newExif), croppedImageDataUrl);
+
+                    // Show the cropped image in the preview container
+                    preview.innerHTML = '';
+                    preview.style.width = newWidth;
+                    preview.style.height = newHeight;
+                    previewContainer.style.display = "block";
+                    const imgElement = document.createElement('img');
+                    imgElement.src = newDataUrl;
+                    preview.appendChild(imgElement);
+
+                    // Update the download button link
+                    downloadButton.href = newDataUrl;
+                    downloadButton.download = filename;
+                    downloadButton.style.display = 'inline-block'; // Show the download button
+                } else {
+                    console.log("No cropper found");
+                }
+            });
+        });
+    </script>
+</body>
+</html>
